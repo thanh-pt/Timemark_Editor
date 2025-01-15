@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timemark Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            margin-bottom: 10px;
+            max-width: 600px;
+            margin: 0 auto 10px auto;
+        }
+        .form-group label {
+            margin-right: 10px;
+            min-width: 150px;
+            text-align: right;
+        }
+        input[type="text"],
+        input[type="file"],
+        button {
+            padding: 5px;
+            width: 100%;
+            max-width: 600px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .box {
+            border: 1px solid black;
+			width: 45%; /* Đặt chiều rộng theo phần trăm để co giãn */
+			aspect-ratio: 3 / 4; /* Đảm bảo tỷ lệ 3:4 */
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			text-align: center;
+			font-size: 14px;
+			overflow: hidden;
+        }
+        .box img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <h1>Timemark Editor</h1>
+    <form id="timemark-form">
+        <div class="form-group">
+            <label for="date">Ngày (dd/mm/yyyy):</label>
+            <input type="text" id="date" name="date" value="" required>
+        </div>
+
+        <div class="form-group">
+            <label for="time">Giờ (hh:mm):</label>
+            <input type="text" id="time" name="time" value="" required>
+        </div>
+
+        <div class="form-group">
+            <label for="image">Chọn ảnh:</label>
+            <input type="file" id="image" name="image" accept="image/*" required>
+        </div>
+
+        <div class="form-group">
+            <button type="submit">Reload</button>
+        </div>
+    </form>
+
+    <div class="container">
+        <div class="box">
+            <p>Preview Image</p>
+        </div>
+        <div class="box" id="output-box">
+            <p>Output Image</p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('timemark-form');
+        const outputBox = document.getElementById('output-box');
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault(); // Ngăn form nạp lại trang
+            outputBox.innerHTML = '<p>Loading...</p>';
+
+            const formData = new FormData(form);
+            fetch('/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.output_url) {
+                    const url = data.output_url;
+                    outputBox.innerHTML = `<img src="${url}" alt="Output Image">`;
+                } else {
+                    outputBox.innerHTML = '<p style="color: red;">Error generating image</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                outputBox.innerHTML = '<p style="color: red;">Error generating image</p>';
+            });
+        });
+
+        // Xử lý preview image khi chọn ảnh
+        document.getElementById('image').addEventListener('change', function (event) {
+            const previewBox = document.querySelector('.container .box:first-child');
+            const file = event.target.files[0];
+            previewBox.innerHTML = '<p>Preview Image</p>';
+            outputBox.innerHTML = '<p>Output Image</p>';
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    previewBox.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                    outputBox.innerHTML = '<p>Loading...</p>';
+                };
+                reader.readAsDataURL(file);
+
+                const formData = new FormData(form);
+                fetch('/', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.output_url) {
+                        const url = data.output_url;
+                        outputBox.innerHTML = `<img src="${url}" alt="Output Image">`;
+                    } else {
+                        outputBox.innerHTML = '<p style="color: red;">Error generating image</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    outputBox.innerHTML = '<p style="color: red;">Error generating image</p>';
+                });
+            }
+        });
+            // Thiết lập ngày và giờ mặc định
+        const now = new Date();
+        const formattedDate = now.toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        const formattedTime = now.toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+
+        document.getElementById('date').value = formattedDate;
+        document.getElementById('time').value = formattedTime;
+    </script>
+</body>
+</html>
